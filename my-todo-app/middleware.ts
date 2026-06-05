@@ -31,8 +31,9 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  // 비로그인 상태에서 보호된 경로 접근 시 로그인 페이지로 리다이렉트
-  if (!user && pathname !== '/login') {
+  // 인증 없이 접근 가능한 경로
+  const publicPaths = ['/login', '/auth/reset-password', '/auth/callback']
+  if (!user && !publicPaths.some(p => pathname.startsWith(p))) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

@@ -16,20 +16,35 @@ export default function ResetPasswordPage() {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    // 이미 세션이 있으면 (callback에서 넘어온 경우) 바로 ready
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        setReady(true)
-        return
-      }
-      // hash 기반 recovery 토큰 감지 (fallback)
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-        if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+
+    if (code) {
+      // PKCE 코드 교환
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (!error) {
           setReady(true)
+          // URL에서 code 파라미터 제거
+          window.history.replaceState({}, '', '/auth/reset-password')
+        } else {
+          setError('링크가 만료됐거나 유효하지 않아. 비밀번호 찾기를 다시 시도해줘.')
         }
       })
-      return () => subscription.unsubscribe()
+      return
+    }
+
+    // 이미 세션 있는 경우 (로그인 상태에서 직접 접근)
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) setReady(true)
     })
+
+    // hash 기반 recovery 감지 (fallback)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+        setReady(true)
+      }
+    })
+    return () => subscription.unsubscribe()
   }, [])
 
   async function handleReset(e: React.FormEvent) {
