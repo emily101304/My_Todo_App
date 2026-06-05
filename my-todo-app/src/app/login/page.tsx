@@ -8,7 +8,7 @@ export default function LoginPage() {
   const router = useRouter()
   const supabase = createClient()
 
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -38,6 +38,22 @@ export default function LoginPage() {
       }
     }
 
+    setLoading(false)
+  }
+
+  async function handleForgotPassword(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    setMessage('')
+    setLoading(true)
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    })
+    if (error) {
+      setError(error.message)
+    } else {
+      setMessage('비밀번호 재설정 링크를 이메일로 발송했어요. 메일함을 확인해줘.')
+    }
     setLoading(false)
   }
 
@@ -87,6 +103,46 @@ export default function LoginPage() {
             </button>
           </div>
 
+          {/* 비밀번호 찾기 모드 */}
+          {mode === 'forgot' && (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <p className="text-sm text-gray-400">
+                가입한 이메일을 입력하면 비밀번호 재설정 링크를 보내줄게.
+              </p>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1.5">이메일</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="you@example.com"
+                  className="w-full px-3 py-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                />
+              </div>
+              {error && (
+                <p className="text-sm text-red-400 bg-red-900/20 border border-red-800 rounded-lg px-3 py-2">{error}</p>
+              )}
+              {message && (
+                <p className="text-sm text-green-400 bg-green-900/20 border border-green-800 rounded-lg px-3 py-2">{message}</p>
+              )}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
+              >
+                {loading ? '발송 중...' : '재설정 링크 보내기'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMode('login'); setError(''); setMessage('') }}
+                className="w-full text-sm text-gray-500 hover:text-gray-300 transition-colors"
+              >
+                로그인으로 돌아가기
+              </button>
+            </form>
+          )}
+
           {/* 구글 로그인 */}
           <button
             onClick={handleGoogleLogin}
@@ -108,7 +164,7 @@ export default function LoginPage() {
           </div>
 
           {/* 이메일/비밀번호 폼 */}
-          <form onSubmit={handleEmailAuth} className="space-y-4">
+          {mode !== 'forgot' && <form onSubmit={handleEmailAuth} className="space-y-4">
             <div>
               <label className="block text-sm text-gray-400 mb-1.5">이메일</label>
               <input
@@ -151,7 +207,17 @@ export default function LoginPage() {
             >
               {loading ? '처리 중...' : mode === 'login' ? '로그인' : '회원가입'}
             </button>
-          </form>
+
+            {mode === 'login' && (
+              <button
+                type="button"
+                onClick={() => { setMode('forgot'); setError(''); setMessage('') }}
+                className="w-full text-sm text-gray-500 hover:text-gray-300 transition-colors text-center"
+              >
+                비밀번호를 잊으셨나요?
+              </button>
+            )}
+          </form>}
         </div>
       </div>
     </div>
