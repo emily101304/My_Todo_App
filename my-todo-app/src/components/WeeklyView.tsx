@@ -11,30 +11,27 @@ interface Todo {
 
 interface WeeklyViewProps {
   todos: Todo[]
+  weekStart: Date
+  onPrevWeek: () => void
+  onNextWeek: () => void
   onDayClick: (date: string) => void
-}
-
-function getWeekDays() {
-  const today = new Date()
-  const day = today.getDay() // 0=일
-  const monday = new Date(today)
-  monday.setDate(today.getDate() - ((day + 6) % 7)) // 월요일 기준
-
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday)
-    d.setDate(monday.getDate() + i)
-    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-    return { dateStr, date: d }
-  })
 }
 
 const DAY_LABELS = ['월', '화', '수', '목', '금', '토', '일']
 
-export default function WeeklyView({ todos, onDayClick }: WeeklyViewProps) {
-  const weekDays = getWeekDays()
+function toDateStr(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+}
+
+export default function WeeklyView({ todos, weekStart, onPrevWeek, onNextWeek, onDayClick }: WeeklyViewProps) {
+  const weekDays = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart)
+    d.setDate(weekStart.getDate() + i)
+    return { dateStr: toDateStr(d), date: d }
+  })
 
   const today = new Date()
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`
+  const todayStr = toDateStr(today)
 
   const todosByDate: Record<string, Todo[]> = {}
   todos.forEach(todo => {
@@ -42,8 +39,34 @@ export default function WeeklyView({ todos, onDayClick }: WeeklyViewProps) {
     todosByDate[todo.date].push(todo)
   })
 
+  const weekLabel = (() => {
+    const start = weekDays[0].date
+    const end = weekDays[6].date
+    if (start.getMonth() === end.getMonth()) {
+      return `${start.getMonth()+1}월 ${start.getDate()}일 - ${end.getDate()}일`
+    }
+    return `${start.getMonth()+1}/${start.getDate()} - ${end.getMonth()+1}/${end.getDate()}`
+  })()
+
   return (
     <div className="flex flex-col gap-2">
+      {/* 주간 네비게이션 */}
+      <div className="flex items-center justify-between mb-1">
+        <button
+          onClick={onPrevWeek}
+          className="w-7 h-7 flex items-center justify-center rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors text-lg"
+        >
+          ‹
+        </button>
+        <span className="text-xs text-white/50">{weekLabel}</span>
+        <button
+          onClick={onNextWeek}
+          className="w-7 h-7 flex items-center justify-center rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors text-lg"
+        >
+          ›
+        </button>
+      </div>
+
       {weekDays.map(({ dateStr, date }, i) => {
         const dayTodos = todosByDate[dateStr] || []
         const done = dayTodos.filter(t => t.completed).length
@@ -91,7 +114,6 @@ export default function WeeklyView({ todos, onDayClick }: WeeklyViewProps) {
             ) : (
               <ul
                 className="space-y-0.5 overflow-y-auto transition-all duration-200"
-                style={{ maxHeight: dayTodos.length > 3 ? undefined : undefined }}
                 onMouseEnter={e => { if (dayTodos.length > 3) (e.currentTarget as HTMLElement).style.maxHeight = '120px' }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.maxHeight = '54px' }}
                 ref={el => { if (el && dayTodos.length > 3) el.style.maxHeight = '54px' }}

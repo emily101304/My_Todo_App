@@ -62,6 +62,16 @@ export default function MainPage({ email, userId }: { email: string; userId: str
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
 
+  // 주간 네비게이션 (월요일 기준)
+  const [weekStart, setWeekStart] = useState<Date>(() => {
+    const today = new Date()
+    const diff = (today.getDay() + 6) % 7
+    const monday = new Date(today)
+    monday.setDate(today.getDate() - diff)
+    monday.setHours(0, 0, 0, 0)
+    return monday
+  })
+
   const todayStr = getTodayStr()
 
   useEffect(() => {
@@ -146,6 +156,20 @@ export default function MainPage({ email, userId }: { email: string; userId: str
   async function updatePriority(id: string, priority: Priority) {
     await supabase.from('todos').update({ priority }).eq('id', id)
     setTodos(prev => prev.map(t => t.id === id ? { ...t, priority } : t))
+  }
+
+  function moveWeek(direction: 1 | -1) {
+    setWeekStart(prev => {
+      const next = new Date(prev)
+      next.setDate(prev.getDate() + direction * 7)
+      // 다른 달로 넘어가면 해당 달 데이터 fetch
+      const nextMonth = next.getMonth()
+      const nextYear = next.getFullYear()
+      if (nextMonth !== currentMonth.getMonth() || nextYear !== currentMonth.getFullYear()) {
+        setCurrentMonth(new Date(nextYear, nextMonth, 1))
+      }
+      return next
+    })
   }
 
   async function postponeTodos(ids: string[], targetDate: string) {
@@ -292,6 +316,9 @@ export default function MainPage({ email, userId }: { email: string; userId: str
           <div className="flex-1 overflow-y-auto px-3 py-3">
             <WeeklyView
               todos={todos}
+              weekStart={weekStart}
+              onPrevWeek={() => moveWeek(-1)}
+              onNextWeek={() => moveWeek(1)}
               onDayClick={setSelectedDate}
             />
           </div>
