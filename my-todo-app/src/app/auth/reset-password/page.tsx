@@ -79,7 +79,7 @@ export default function ResetPasswordPage() {
     } else {
       setMessage('비밀번호가 변경됐어요. 새 비밀번호로 로그인해줘.')
       await supabase.auth.signOut()
-      setTimeout(() => router.push('/login'), 2000)
+      setTimeout(() => { window.location.href = '/login' }, 2000)
     }
     setLoading(false)
   }
