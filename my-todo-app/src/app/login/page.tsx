@@ -33,12 +33,12 @@ export default function LoginPage() {
       const { data, error } = await supabase.auth.signUp({ email, password })
       if (error) {
         setError(error.message)
-      } else if (data.session) {
-        // 이메일 인증 없이 즉시 가입 완료 → 메인으로 이동
-        router.push('/')
-        router.refresh()
       } else {
-        setMessage('가입이 완료되었습니다!')
+        // 가입 완료 후 로그아웃 상태로 로그인 페이지 유지
+        if (data.session) await supabase.auth.signOut()
+        setMode('login')
+        setPassword('')
+        setMessage('가입이 완료되었습니다! 로그인해주세요.')
       }
     }
 
