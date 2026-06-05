@@ -32,7 +32,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // 인증 없이 접근 가능한 경로
-  const publicPaths = ['/login', '/auth/reset-password', '/auth/callback']
+  const publicPaths = ['/login', '/auth/reset-password', '/auth/callback', '/api/']
   if (!user && !publicPaths.some(p => pathname.startsWith(p))) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
