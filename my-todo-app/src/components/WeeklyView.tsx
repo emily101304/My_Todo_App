@@ -89,17 +89,20 @@ export default function WeeklyView({ todos, onDayClick }: WeeklyViewProps) {
             {dayTodos.length === 0 ? (
               <p className="text-xs text-white/20 pl-0.5">할 일 없음</p>
             ) : (
-              <ul className="space-y-0.5">
-                {dayTodos.slice(0, 3).map(todo => (
+              <ul
+                className="space-y-0.5 overflow-y-auto transition-all duration-200"
+                style={{ maxHeight: dayTodos.length > 3 ? undefined : undefined }}
+                onMouseEnter={e => { if (dayTodos.length > 3) (e.currentTarget as HTMLElement).style.maxHeight = '120px' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.maxHeight = '54px' }}
+                ref={el => { if (el && dayTodos.length > 3) el.style.maxHeight = '54px' }}
+              >
+                {dayTodos.map(todo => (
                   <li key={todo.id} className={`text-xs truncate ${
                     todo.completed ? 'line-through text-white/25' : 'text-white/70'
                   }`}>
                     {todo.title}
                   </li>
                 ))}
-                {dayTodos.length > 3 && (
-                  <li className="text-xs text-white/30">+{dayTodos.length - 3}개 더</li>
-                )}
               </ul>
             )}
           </div>
