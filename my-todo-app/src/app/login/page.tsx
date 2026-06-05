@@ -30,11 +30,15 @@ export default function LoginPage() {
         router.refresh()
       }
     } else {
-      const { error } = await supabase.auth.signUp({ email, password })
+      const { data, error } = await supabase.auth.signUp({ email, password })
       if (error) {
         setError(error.message)
+      } else if (data.session) {
+        // 이메일 인증 없이 즉시 가입 완료 → 메인으로 이동
+        router.push('/')
+        router.refresh()
       } else {
-        setMessage('가입 확인 이메일을 발송했어요. 이메일을 확인해주세요.')
+        setMessage('가입이 완료되었습니다!')
       }
     }
 
