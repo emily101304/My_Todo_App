@@ -18,14 +18,21 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const code = params.get('code')
+    const hashParams = new URLSearchParams(window.location.hash.replace('#', ''))
+    const hashType = hashParams.get('type')
 
+    // hash 기반 recovery (implicit flow)
+    if (hashType === 'recovery') {
+      setReady(true)
+      return
+    }
+
+    // PKCE 코드 교환
     if (code) {
-      // PKCE 코드 교환
+      window.history.replaceState({}, '', '/auth/reset-password')
       supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
         if (!error) {
           setReady(true)
-          // URL에서 code 파라미터 제거
-          window.history.replaceState({}, '', '/auth/reset-password')
         } else {
           setError('링크가 만료됐거나 유효하지 않아. 비밀번호 찾기를 다시 시도해줘.')
         }
@@ -33,12 +40,16 @@ export default function ResetPasswordPage() {
       return
     }
 
-    // 이미 세션 있는 경우 (로그인 상태에서 직접 접근)
+    // 이미 세션 있는 경우
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setReady(true)
+      if (data.session) {
+        setReady(true)
+        return
+      }
+      // 세션도 코드도 없으면 에러
+      setError('유효하지 않은 링크야. 비밀번호 찾기를 다시 시도해줘.')
     })
 
-    // hash 기반 recovery 감지 (fallback)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
         setReady(true)
@@ -82,7 +93,18 @@ export default function ResetPasswordPage() {
 
         <div className="bg-gray-900 rounded-2xl border border-gray-800 p-8 shadow-xl">
           {!ready ? (
-            <p className="text-gray-400 text-sm text-center">링크를 확인하는 중이에요...</p>
+            <div className="text-center space-y-3">
+              {error ? (
+                <>
+                  <p className="text-sm text-red-400 bg-red-900/20 border border-red-800 rounded-lg px-3 py-2">{error}</p>
+                  <a href="/login" className="block text-sm text-blue-400 hover:text-blue-300 transition-colors">
+                    로그인 페이지로 돌아가기
+                  </a>
+                </>
+              ) : (
+                <p className="text-gray-400 text-sm">링크를 확인하는 중이에요...</p>
+              )}
+            </div>
           ) : (
             <form onSubmit={handleReset} className="space-y-4">
               <div>
