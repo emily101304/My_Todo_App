@@ -148,12 +148,9 @@ export default function MainPage({ email, userId }: { email: string; userId: str
     setTodos(prev => prev.map(t => t.id === id ? { ...t, priority } : t))
   }
 
-  async function postponeTodos(ids: string[]) {
-    const d = new Date()
-    d.setDate(d.getDate() + 1)
-    const tomorrowStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-    await supabase.from('todos').update({ date: tomorrowStr }).in('id', ids)
-    setTodos(prev => prev.map(t => ids.includes(t.id) ? { ...t, date: tomorrowStr } : t))
+  async function postponeTodos(ids: string[], targetDate: string) {
+    await supabase.from('todos').update({ date: targetDate }).in('id', ids)
+    setTodos(prev => prev.map(t => ids.includes(t.id) ? { ...t, date: targetDate } : t))
   }
 
   async function deleteTodo(id: string) {

@@ -18,7 +18,7 @@ interface TodayListProps {
   onToggle: (id: string, completed: boolean) => Promise<void>
   onUpdate: (id: string, title: string) => Promise<void>
   onPriorityChange: (id: string, priority: Priority) => Promise<void>
-  onPostpone: (ids: string[]) => Promise<void>
+  onPostpone: (ids: string[], targetDate: string) => Promise<void>
   onDelete: (id: string) => Promise<void>
 }
 
@@ -54,8 +54,9 @@ export default function TodayList({ todos, onAdd, onToggle, onUpdate, onPriority
   const editInputRef = useRef<HTMLInputElement>(null)
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [dragOverPriority, setDragOverPriority] = useState<Priority | null>(null)
-  const [postponeMode, setPostponeMode] = useState(false)
+  const [postponeMode, setPostponeMode] = useState<'tomorrow' | 'custom' | false>(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [customDate, setCustomDate] = useState('')
 
   useEffect(() => {
     if (editingId) editInputRef.current?.focus()
@@ -97,22 +98,35 @@ export default function TodayList({ todos, onAdd, onToggle, onUpdate, onPriority
     })
   }
 
-  function enterPostponeMode() {
-    setPostponeMode(true)
+  function getTomorrowStr() {
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+  }
+
+  function enterPostponeMode(mode: 'tomorrow' | 'custom') {
+    setPostponeMode(mode)
     setSelectedIds(new Set())
     setEditingId(null)
+    if (mode === 'custom') {
+      setCustomDate(getTomorrowStr())
+    }
   }
 
   function cancelPostpone() {
     setPostponeMode(false)
     setSelectedIds(new Set())
+    setCustomDate('')
   }
 
   async function confirmPostpone() {
     if (selectedIds.size === 0) return
-    await onPostpone([...selectedIds])
+    const targetDate = postponeMode === 'tomorrow' ? getTomorrowStr() : customDate
+    if (!targetDate) return
+    await onPostpone([...selectedIds], targetDate)
     setPostponeMode(false)
     setSelectedIds(new Set())
+    setCustomDate('')
   }
 
   const done = todos.filter(t => t.completed).length
@@ -137,13 +151,22 @@ export default function TodayList({ todos, onAdd, onToggle, onUpdate, onPriority
             <span className="text-xs text-white/40">{done}/{todos.length} 완료</span>
           )}
           {postponeMode ? (
-            <>
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+              {postponeMode === 'custom' && (
+                <input
+                  type="date"
+                  value={customDate}
+                  min={getTomorrowStr()}
+                  onChange={(e) => setCustomDate(e.target.value)}
+                  className="px-2 py-1 rounded-lg bg-gray-800 border border-gray-600 text-white text-xs focus:outline-none focus:ring-1 focus:ring-orange-500"
+                />
+              )}
               <button
                 onClick={confirmPostpone}
-                disabled={selectedIds.size === 0}
+                disabled={selectedIds.size === 0 || (postponeMode === 'custom' && !customDate)}
                 className="px-3 py-1 rounded-lg bg-orange-500 hover:bg-orange-400 disabled:opacity-30 disabled:cursor-not-allowed text-white text-xs font-medium transition-colors"
               >
-                내일로 미루기 {selectedIds.size > 0 && `(${selectedIds.size})`}
+                {postponeMode === 'tomorrow' ? '내일로' : '날짜로'} 미루기 {selectedIds.size > 0 && `(${selectedIds.size})`}
               </button>
               <button
                 onClick={cancelPostpone}
@@ -151,15 +174,23 @@ export default function TodayList({ todos, onAdd, onToggle, onUpdate, onPriority
               >
                 취소
               </button>
-            </>
+            </div>
           ) : (
             incomplete.length > 0 && (
-              <button
-                onClick={enterPostponeMode}
-                className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white/50 hover:text-white text-xs transition-colors"
-              >
-                내일로 미루기
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => enterPostponeMode('tomorrow')}
+                  className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white/50 hover:text-white text-xs transition-colors"
+                >
+                  내일로 미루기
+                </button>
+                <button
+                  onClick={() => enterPostponeMode('custom')}
+                  className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white/50 hover:text-white text-xs transition-colors"
+                >
+                  날짜 지정
+                </button>
+              </div>
             )
           )}
         </div>
@@ -324,7 +355,7 @@ export default function TodayList({ todos, onAdd, onToggle, onUpdate, onPriority
 interface TodoItemProps {
   todo: Todo
   isDragging: boolean
-  postponeMode: boolean
+  postponeMode: 'tomorrow' | 'custom' | false
   isSelected: boolean
   onSelect: () => void
   editingId: string | null
@@ -350,18 +381,18 @@ function TodoItem({
 
   return (
     <li
-      draggable={!todo.completed && !postponeMode}
+      draggable={!todo.completed && postponeMode === false}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       className={`flex items-center gap-3 px-3 py-2.5 rounded-xl backdrop-blur-sm border group transition-all ${
         todo.completed ? 'bg-white/5 border-white/5 opacity-60' : cfg.border
       } ${isSelected ? 'bg-orange-500/20 border-orange-500/40' : 'bg-white/10'} ${
-        isDragging ? 'opacity-40 cursor-grabbing' : postponeMode && !todo.completed ? 'cursor-pointer' : 'cursor-grab'
+        isDragging ? 'opacity-40 cursor-grabbing' : postponeMode !== false && !todo.completed ? 'cursor-pointer' : 'cursor-grab'
       }`}
-      onClick={postponeMode && !todo.completed ? onSelect : undefined}
+      onClick={postponeMode !== false && !todo.completed ? onSelect : undefined}
     >
       {/* 미루기 선택 체크박스 */}
-      {postponeMode && !todo.completed && (
+      {postponeMode !== false && !todo.completed && (
         <div className={`w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
           isSelected ? 'bg-orange-500 border-orange-500' : 'border-white/30'
         }`}>
@@ -416,7 +447,7 @@ function TodoItem({
       )}
 
       {/* 삭제 */}
-      {!postponeMode && (
+      {postponeMode === false && (
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(todo.id) }}
           className="opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all text-lg leading-none flex-shrink-0"
