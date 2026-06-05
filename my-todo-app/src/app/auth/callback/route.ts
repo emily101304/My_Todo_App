@@ -8,8 +8,14 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
+      // 비밀번호 재설정 세션이면 reset-password 페이지로
+      const isRecovery = data.session?.user?.app_metadata?.provider === undefined
+        && next === '/auth/reset-password'
+      if (next === '/auth/reset-password' || isRecovery) {
+        return NextResponse.redirect(`${origin}/auth/reset-password`)
+      }
       return NextResponse.redirect(`${origin}${next}`)
     }
   }

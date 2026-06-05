@@ -16,11 +16,19 @@ export default function ResetPasswordPage() {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    // Supabase가 URL 해시의 recovery 토큰을 자동으로 세션으로 변환
-    supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
+    // 이미 세션이 있으면 (callback에서 넘어온 경우) 바로 ready
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
         setReady(true)
+        return
       }
+      // hash 기반 recovery 토큰 감지 (fallback)
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+        if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+          setReady(true)
+        }
+      })
+      return () => subscription.unsubscribe()
     })
   }, [])
 
