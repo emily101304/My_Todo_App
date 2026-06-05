@@ -316,8 +316,22 @@ export default function MainPage({ email, userId }: { email: string; userId: str
 
         {/* Weekly 패널 */}
         <section className="flex-1 flex flex-col bg-white/10 backdrop-blur-md rounded-2xl border border-white/15 overflow-hidden">
-          <div className="px-4 pt-3 pb-2 flex-shrink-0 border-b border-white/10">
+          <div className="px-4 pt-3 pb-2 flex-shrink-0 border-b border-white/10 flex items-center justify-between">
             <h2 className="text-white font-semibold text-sm">Weekly</h2>
+            <button
+              onClick={() => {
+                const today = new Date()
+                const diff = (today.getDay() + 6) % 7
+                const monday = new Date(today)
+                monday.setDate(today.getDate() - diff)
+                monday.setHours(0, 0, 0, 0)
+                setWeekStart(monday)
+                setCurrentMonth(new Date(today.getFullYear(), today.getMonth(), 1))
+              }}
+              className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white/50 hover:text-white text-xs transition-colors"
+            >
+              이번 주
+            </button>
           </div>
           <div className="flex-1 overflow-y-auto px-3 py-3">
             <WeeklyView
