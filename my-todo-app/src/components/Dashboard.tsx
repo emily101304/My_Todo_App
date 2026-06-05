@@ -104,7 +104,7 @@ export default function Dashboard({ todos, currentMonth, onMonthChange, onDayCli
                   : 'bg-white/5 hover:bg-white/15'
               }`}
             >
-              <span className={`text-sm font-medium ${
+              <span className={`text-sm font-medium leading-none ${
                 isToday
                   ? 'text-white'
                   : isRed
@@ -115,9 +115,16 @@ export default function Dashboard({ todos, currentMonth, onMonthChange, onDayCli
               }`}>
                 {day}
               </span>
+              {holidayName && (
+                <span className={`text-[8px] leading-tight text-center px-0.5 truncate w-full ${
+                  isToday ? 'text-red-200' : 'text-red-400'
+                }`}>
+                  {holidayName}
+                </span>
+              )}
               {counts && (
-                <span className={`text-xs mt-0.5 font-medium ${
-                  isToday ? 'text-blue-200' : 'text-white/50'
+                <span className={`text-[9px] font-medium leading-none ${
+                  isToday ? 'text-blue-200' : 'text-white/40'
                 }`}>
                   {counts.done}/{counts.total}
                 </span>
