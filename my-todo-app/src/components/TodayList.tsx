@@ -345,7 +345,7 @@ export default function TodayList({ todos, onAdd, onToggle, onUpdate, onPriority
 
       {hasTodos && (
         <p className="text-xs text-white/20 text-center mt-4">
-          텍스트 클릭 시 수정 — Enter 저장, Esc 취소
+          텍스트 클릭 시, 수정 가능 — 작성 완료 후 Enter 저장
         </p>
       )}
     </div>
