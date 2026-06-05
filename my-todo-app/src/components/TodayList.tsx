@@ -188,7 +188,7 @@ export default function TodayList({ todos, onAdd, onToggle, onUpdate, onPriority
                   onClick={() => enterPostponeMode('custom')}
                   className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white/50 hover:text-white text-xs transition-colors"
                 >
-                  날짜 지정
+                  다른 날로 미루기
                 </button>
               </div>
             )
@@ -413,10 +413,11 @@ function TodoItem({
 
       {/* 체크박스 */}
       <button
-        onClick={(e) => { e.stopPropagation(); onToggle(todo.id, !todo.completed) }}
+        onClick={(e) => { e.stopPropagation(); if (postponeMode === false) onToggle(todo.id, !todo.completed) }}
+        disabled={postponeMode !== false}
         className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
           todo.completed ? 'bg-blue-500 border-blue-500' : 'border-white/40 hover:border-white/70'
-        }`}
+        } ${postponeMode !== false ? 'opacity-30 cursor-not-allowed' : ''}`}
       >
         {todo.completed && (
           <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
